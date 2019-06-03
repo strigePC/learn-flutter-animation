@@ -1,5 +1,6 @@
-import 'package:animation/src/widgets/cat.dart';
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:animation/src/widgets/cat.dart';
 
 class Home extends StatefulWidget {
   @override
@@ -10,23 +11,44 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
   Animation<double> catAnimation;
   AnimationController catController;
 
+  Animation<double> boxAnimation;
+  AnimationController boxController;
+
   @override
   void initState() {
     super.initState();
 
     catController = AnimationController(
-      duration: Duration(seconds: 2),
+      duration: Duration(milliseconds: 500),
       vsync: this,
     );
 
-    catAnimation = Tween(begin: 0.0, end: 100.0).animate(
+    catAnimation = Tween(begin: -30.0, end: -150.0).animate(
       CurvedAnimation(
         parent: catController,
         curve: Curves.easeIn,
       ),
     );
 
-    catController.forward();
+    boxController =
+        AnimationController(duration: Duration(milliseconds: 500), vsync: this);
+
+    boxAnimation = Tween(
+      begin: pi * 0.6,
+      end: pi * 0.65,
+    ).animate(CurvedAnimation(
+      parent: boxController,
+      curve: Curves.easeIn,
+    ));
+
+    boxAnimation.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        boxController.reverse();
+      } else if (status == AnimationStatus.dismissed) {
+        boxController.forward();
+      }
+    });
+    boxController.forward();
   }
 
   @override
@@ -35,20 +57,93 @@ class HomeState extends State<Home> with TickerProviderStateMixin {
       appBar: AppBar(
         title: Text('Animation!'),
       ),
-      body: buildAnimation(),
+      body: GestureDetector(
+        child: Center(
+          child: Stack(
+            overflow: Overflow.visible,
+            children: <Widget>[
+              buildCatAnimation(),
+              buildBox(),
+              buildLeftFlap(),
+              buildRightFlap(),
+            ],
+          ),
+        ),
+        onTap: onTap,
+      ),
     );
   }
 
-  Widget buildAnimation() {
+  void onTap() {
+    if (catController.status == AnimationStatus.completed) {
+      boxController.forward();
+      catController.reverse();
+    } else if (catController.status == AnimationStatus.dismissed) {
+      boxController.stop();
+      catController.forward();
+    }
+  }
+
+  Widget buildCatAnimation() {
     return AnimatedBuilder(
       animation: catAnimation,
       builder: (context, child) {
-        return Container(
+        return Positioned(
           child: child,
-          margin: EdgeInsets.only(top: catAnimation.value),
+          left: 20.0,
+          right: 20.0,
+          top: catAnimation.value,
         );
       },
       child: Cat(),
+    );
+  }
+
+  Widget buildBox() {
+    return Container(
+      height: 200.0,
+      width: 200.0,
+      color: Colors.brown,
+    );
+  }
+
+  Widget buildLeftFlap() {
+    return AnimatedBuilder(
+      animation: boxAnimation,
+      builder: (context, child) {
+        return Positioned(
+          left: 3.0,
+          child: Transform.rotate(
+            child: Container(
+              height: 10.0,
+              width: 100.0,
+              color: Colors.brown,
+            ),
+            alignment: Alignment.topLeft,
+            angle: boxAnimation.value,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget buildRightFlap() {
+    return AnimatedBuilder(
+      animation: boxAnimation,
+      builder: (context, child) {
+        return Positioned(
+          right: 3.0,
+          child: Transform.rotate(
+            child: Container(
+              height: 10.0,
+              width: 100.0,
+              color: Colors.brown,
+            ),
+            alignment: Alignment.topRight,
+            angle: -boxAnimation.value,
+          ),
+        );
+      },
     );
   }
 }
